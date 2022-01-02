@@ -1,11 +1,7 @@
 package com.yqj.jvm;
 
-import sun.misc.Launcher;
-
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public class MyClassLoaderTest {
@@ -69,13 +65,5 @@ public class MyClassLoaderTest {
         method1.invoke(obj1,null);
         System.out.println(clazz1.getClassLoader());
         System.out.println();
-
-        String classPath2 = "/Users/yorick/Documents/study/code/tmp2";
-        MyClassLoader classLoader2 = new MyClassLoader(classPath2);
-        Class<?> clazz2 = classLoader2.loadClass("com.yqj.jvm.Hello");
-        Object obj2 = clazz2.newInstance();
-        Method method2 = clazz2.getDeclaredMethod("sayHello", null);
-        method2.invoke(obj2,null);
-        System.out.println(clazz2.getClassLoader());
     }
 }
