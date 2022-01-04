@@ -333,3 +333,79 @@ version 1.0 ---- hello world!
 com.yqj.jvm.MyClassLoaderTest$MyClassLoader@d716361
 ```
 
+## 2 对象的创建
+
+### 2.1 对象大小与指针压缩
+
+```java
+package com.yqj.jvm;
+
+import org.openjdk.jol.info.ClassLayout;
+
+public class JolSample {
+    public static void main(String[] args) {
+        ClassLayout layout1 = ClassLayout.parseInstance(new Object());
+        System.out.println(layout1.toPrintable());
+
+        System.out.println();
+        ClassLayout layout2 = ClassLayout.parseInstance(new int[]{});
+        System.out.println(layout2.toPrintable());
+
+        System.out.println();
+        ClassLayout layout3 = ClassLayout.parseInstance(new SampleA());
+        System.out.println(layout3.toPrintable());
+    }
+}
+
+//对象内存布局分析
+// ‐XX:+UseCompressedOops 默认开启的压缩所有指针
+// ‐XX:+UseCompressedClassPointers 默认开启的压缩对象头里的类型指针Klass Pointer
+class SampleA {
+  	//8B mark word
+  	//4B Klass Pointer 如果关闭压缩‐XX:‐UseCompressedClassPointers或‐XX:‐UseCompressedOops，则占用8B
+    int id; //4B
+    String name; //4B 如果关闭压缩‐XX:‐UseCompressedOops，则占用8B
+    byte b; //1B
+    Object o; //4B 如果关闭压缩‐XX:‐UseCompressedOops，则占用8B
+}
+```
+
+```java
+// result
+# WARNING: Unable to attach Serviceability Agent. Unable to attach even with module exceptions: [org.openjdk.jol.vm.sa.SASupportException: Sense failed., org.openjdk.jol.vm.sa.SASupportException: Sense failed., org.openjdk.jol.vm.sa.SASupportException: Sense failed.]
+java.lang.Object object internals:
+ OFFSET  SIZE   TYPE DESCRIPTION                               VALUE
+      0     4        (object header)                           01 00 00 00 (00000001 00000000 00000000 00000000) (1) // mark word
+      4     4        (object header)                           00 00 00 00 (00000000 00000000 00000000 00000000) (0) // mark word
+      8     4        (object header)                           68 0f 00 00 (01101000 00001111 00000000 00000000) (3944) // Klass Pointer
+     12     4        (loss due to the next object alignment)// Padding
+Instance size: 16 bytes
+Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
+
+
+[I object internals:
+ OFFSET  SIZE   TYPE DESCRIPTION                               VALUE
+      0     4        (object header)                           01 00 00 00 (00000001 00000000 00000000 00000000) (1) // mark word
+      4     4        (object header)                           00 00 00 00 (00000000 00000000 00000000 00000000) (0) // mark word
+      8     4        (object header)                           98 0b 00 00 (10011000 00001011 00000000 00000000) (2968) // Klass Pointer
+     12     4        (object header)                           00 00 00 00 (00000000 00000000 00000000 00000000) (0) // array length
+     16     0    int [I.<elements>                             N/A//无需Padding，刚好对齐
+Instance size: 16 bytes
+Space losses: 0 bytes internal + 0 bytes external = 0 bytes total
+
+
+com.yqj.jvm.SampleA object internals:
+ OFFSET  SIZE               TYPE DESCRIPTION                               VALUE
+      0     4                    (object header)                           01 00 00 00 (00000001 00000000 00000000 00000000) (1) // mark word
+      4     4                    (object header)                           00 00 00 00 (00000000 00000000 00000000 00000000) (0) // mark word
+      8     4                    (object header)                           98 13 08 00 (10011000 00010011 00001000 00000000) (529304) // Klass Pointer(指针压缩8B)
+     12     4                int SampleA.id      // 4B int                          0
+     16     1               byte SampleA.b  // 1B byte                                0
+     17     3                    (alignment/padding gap)  // padding                
+     20     4   java.lang.String SampleA.name  // 4B String (指针压缩8B)                         null
+     24     4   java.lang.Object SampleA.o  // 4B Object (指针压缩8B)                              null
+     28     4                    (loss due to the next object alignment) // padding
+Instance size: 32 bytes
+Space losses: 3 bytes internal + 4 bytes external = 7 bytes total
+```
+
