@@ -2,7 +2,7 @@ package com.yqj.jvm;
 
 import lombok.Data;
 
-public class Math {
+public class MathTest {
     public static final int initData = 666;
     public static User user = new User();
 
@@ -15,9 +15,9 @@ public class Math {
     }
 
     public static void main(String[] args) {
-        Math math = new Math();
+        MathTest mathTest = new MathTest();
         while (true) {
-            math.compute();
+            mathTest.compute();
         }
     }
 }

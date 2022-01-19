@@ -1,5 +1,7 @@
 package com.yqj.jvm;
 
+import java.util.Collections;
+
 public class AllocOnStack {
     public static void main(String[] args) {
         long start = System.currentTimeMillis();
