@@ -647,7 +647,83 @@ set session optimizer_trace="enabled=off"; # 关闭trace
 }
 ```
 
+## 3 事务隔离级别测试
 
+```sql
+CREATE TABLE`account`(
+`id` int(11) NOT NULL AUTO_INCREMENT, 
+`name` varchar(255) DEFAULT NULL, 
+`balance` int(11) DEFAULT NULL, 
+PRIMARY KEY (`id`)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8; 
+INSERT INTO `account`(`name`,`balance`)VALUES('lilei','450'); 
+INSERT INTO `account`(`name`,`balance`)VALUES('hanmei','16000'); 
+INSERT INTO `account`(`name`,`balance`)VALUES('lucy','2400');
+```
 
+### 3.1 读未提交
 
+| 客户端A                                                      | 客户端B                                               |
+| ------------------------------------------------------------ | ----------------------------------------------------- |
+| set tx_isolation='read-uncommitted';                         | set tx_isolation='read-uncommitted';                  |
+| begin;                                                       | begin;                                                |
+| select * from account;                                       |                                                       |
+|                                                              | update account set balance=balance - 50 where id = 1; |
+|                                                              | select * from account;                                |
+| select * from account;  # 脏读，查看到客户端B事务中更新的数据 |                                                       |
+|                                                              | rollback;                                             |
+|                                                              | select * from account;                                |
+| update account set balance = balance - 50 where id = 1; # 客户端A已脏数据为参照，更新了结果 |                                                       |
+| select * from account;                                       |                                                       |
+| commit;                                                      |                                                       |
+
+### 3.2 读已提交
+
+| 客户端A                                                      | 客户端B                                               |
+| ------------------------------------------------------------ | ----------------------------------------------------- |
+| set tx_isolation='read-committed';                           | set tx_isolation='read-committed';                    |
+| begin;                                                       | begin;                                                |
+| select * from account;                                       |                                                       |
+|                                                              | update account set balance=balance - 50 where id = 1; |
+|                                                              | select * from account;                                |
+| select * from account; # 解决脏读问题，无法读到客户端B在事务未提交时对数据的更新 |                                                       |
+|                                                              | commit;                                               |
+| select * from account; # 可以读到客户端B提交后的数据         |                                                       |
+| commit;                                                      |                                                       |
+
+### 3.3 可重复读
+
+| 客户端A                                                      | 客户端B                                               |
+| ------------------------------------------------------------ | ----------------------------------------------------- |
+| set tx_isolation='repeatable-read';                          | set tx_isolation='repeatable-read';                   |
+| begin;                                                       | begin;                                                |
+| select * from account;                                       |                                                       |
+|                                                              | update account set balance=balance - 50 where id = 1; |
+|                                                              | select * from account;                                |
+|                                                              | commit;                                               |
+| select * from account; # 没有出现不可重复读的问题            |                                                       |
+| update account set balance=balance - 50 where id = 1;        |                                                       |
+| select * from account; # 数据的一致性是没有被破坏，依据的是数据库最新结果更新的。可重复读的隔离级别下使用了MVCC机制，select操作不会更新版本号， 是快照读(历史版本);insert、update和delete会更新版本号，是当前读(当前版本)。 |                                                       |
+|                                                              | begin;                                                |
+|                                                              | insert into account values(4,'yorick',800);           |
+|                                                              | select * from account;                                |
+|                                                              | commit;                                               |
+| select * from account; # 没有查出新增数据，所以没有出现幻读  |                                                       |
+| update account set balance=888 where id = 4;                 |                                                       |
+| select * from account; # 能更新成功，再次查询能查到客户端B新增的数据，出现幻读 |                                                       |
+| commit;                                                      |                                                       |
+
+### 3.4 串形化
+
+| 客户端A                                    | 客户端B                                                      |
+| ------------------------------------------ | ------------------------------------------------------------ |
+| set tx_isolation='serializable';           | set tx_isolation='serializable';                             |
+| begin;                                     | begin;                                                       |
+| select * from account where id = 1;        |                                                              |
+|                                            | update account set balance=balance - 50 where id = 1; # 阻塞，在串行模式下innodb的查询也会被加上行锁。 |
+|                                            | update account set balance=balance - 50 where id = 2; # 成功，id=2未添加行锁，可以修改成功 |
+| select * from account where id = 2; # 阻塞 |                                                              |
+|                                            | commit;                                                      |
+| #由于客户端B提交事务，所以上面语句查询成功 |                                                              |
+| commit;                                    |                                                              |
 
