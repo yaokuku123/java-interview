@@ -3,5 +3,6 @@ package com.yqj.test;
 public class TestDemo {
     public static void main(String[] args) {
         System.out.println("Hello World");
+        StringBuilder sb = new StringBuilder();
     }
 }
