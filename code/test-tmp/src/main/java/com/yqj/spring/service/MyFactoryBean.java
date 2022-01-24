@@ -11,7 +11,7 @@ public class MyFactoryBean implements FactoryBean {
     }
 
     @Override
-    public Class<?> getObjectType() {
+    public Class<?> getObjectType()  {
         return OrderService.class;
     }
 }

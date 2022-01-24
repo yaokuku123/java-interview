@@ -29,17 +29,8 @@ import java.util.Map;
 public class TestSpringDemo {
 
     public static void main(String[] args) throws IOException {
-        SimpleMetadataReaderFactory metadataReaderFactory = new SimpleMetadataReaderFactory();
-        // 构造一个MetadataReader
-        MetadataReader metadataReader = metadataReaderFactory.getMetadataReader("com.yqj.spring.config.AppConfig");
-        // 得到ClassMetadata，并读取类名
-        ClassMetadata classMetadata = metadataReader.getClassMetadata();
-        System.out.println(classMetadata.getClassName());
-        // 得到AnnotationMetadata，并获取类上注解信息
-        AnnotationMetadata annotationMetadata = metadataReader.getAnnotationMetadata();
-        for (String annotationType : annotationMetadata.getAnnotationTypes()) {
-            System.out.println(annotationType);
-        }
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
+        System.out.println(context.getBean("userService"));
     }
 }
 
