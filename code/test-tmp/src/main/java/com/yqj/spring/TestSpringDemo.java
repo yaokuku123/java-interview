@@ -31,6 +31,7 @@ public class TestSpringDemo {
     public static void main(String[] args) throws IOException {
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
         System.out.println(context.getBean("userService"));
+        context.close();
     }
 }
 
