@@ -79,7 +79,7 @@ public class CountWords {
                 queue.offer(entry);
             }
         }
-        for (Map.Entry<String, Integer> entry : queue) {
+        for (Map. Entry<String, Integer> entry : queue) {
             res.put(entry.getKey(),entry.getValue());
         }
         return res;
